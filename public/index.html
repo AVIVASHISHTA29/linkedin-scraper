@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Scraper</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <form id="scrapeForm" onsubmit="event.preventDefault(); scrapeData();">
+      <h1>AccioJob Linkedin Scraper</h1>
+      <input type="text" id="email" placeholder="Linkedin Email" />
+      <input type="text" id="password" placeholder="Linkedin Password" />
+      <input type="text" id="search" placeholder="Keyword to Search" />
+      <input type="text" id="college" placeholder="College to Search" />
+      <input
+        type="number"
+        max="100"
+        min="1"
+        id="pages"
+        value="100"
+        placeholder="Max Number Of Pages"
+      />
+      <button type="submit">Scrape</button>
+      <h2 id="result"></h2>
+    </form>
+
+    <script>
+      async function scrapeData() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const search = document.getElementById("search").value;
+        const college = document.getElementById("college").value;
+        const pages = document.getElementById("pages").value;
+
+        const response = await fetch("/scrape", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password, search, college, pages }),
+        });
+
+        const data = await response.json();
+        document.getElementById("result").innerText = `${data.message}`;
+        if (data.success) {
+          document.getElementById("result").style.color = "#5cb85c";
+          const a = document.createElement("a");
+          a.href = "/download";
+          a.download = "links.csv";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          document.getElementById("result").style.color = "#bb2124";
+        }
+      }
+    </script>
+  </body>
+</html>
