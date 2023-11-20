@@ -6,7 +6,8 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 app = Flask(__name__, static_folder="public")
 
@@ -56,7 +57,8 @@ def scrape():
         driver.find_element(By.ID, 'password').send_keys(password)
         driver.find_element(By.CLASS_NAME, 'btn__primary--large').click()
         
-        time.sleep(2)  # Wait for login to complete
+        # time.sleep(5)  # Wait for login to complete
+        WebDriverWait(driver, 500).until(EC.presence_of_element_located((By.CLASS_NAME, 'feed-identity-module__actor-meta')))
 
         urls = []
 
@@ -69,13 +71,37 @@ def scrape():
             time.sleep(5)  # Sleep for 5 seconds
 
             newUrls = extract_links_from_page(driver)
-            urls.extend([url for url in newUrls if url not in badUrls])
+            urls.extend([url for url in newUrls if url not in badUrls and "https://www.linkedin.com/search/results/people/" not in url])
+
+        def extract_details(driver, url):
+            driver.get(url)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.pv-text-details__about-this-profile-entrypoint')))
+            time.sleep(2)  # Sleep for stability, adjust as needed
+
+            # Extract the name
+            name_element = driver.find_element(By.CSS_SELECTOR, '.pv-text-details__about-this-profile-entrypoint h1')
+            name = name_element.text if name_element else 'Name not found'
+
+            # Extract the text content
+            text_content_element = driver.find_element(By.CSS_SELECTOR, '.inline-show-more-text')
+            text_content = text_content_element.text if text_content_element else 'Text content not found'
+
+            return name, text_content
+        
+
+
+        urls = list(set(urls))
+
+        with open("output.txt", "w") as file:
+            for item in urls:
+                file.write(item + "\n")
 
         # Save the URLs to a CSV file
         with open('links.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             for link in urls:
-                writer.writerow([link])
+                name, text_content = extract_details(driver, link)
+                writer.writerow([link, name, text_content])
 
         print('URLs saved to links.csv.')
 
