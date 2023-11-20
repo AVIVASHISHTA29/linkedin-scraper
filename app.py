@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import urllib.parse
 
 app = Flask(__name__, static_folder="public")
 
@@ -26,13 +27,12 @@ def scrape():
     password = data.get('password', 'PasswordToLogin')
     search = data.get('search', 'talent')
     college = data.get('college', 'symbiosis')
-    search = search.replace(" ", "%20")
-    college = college.replace(" ", "%20")
     max_pages = int(data.get('pages', 100))
-    
-    # Encode keywords
-    encodedKeyword1 = search.replace(' ', '%20')
-    encodedKeyword2 = college.replace(' ', '%20')
+
+    # Encoding the strings
+    search = urllib.parse.quote(search)
+    college = urllib.parse.quote(college)
+
     
     badUrls = [
         "https://www.linkedin.com/feed/?nis=true",
@@ -86,15 +86,14 @@ def scrape():
             text_content_element = driver.find_element(By.CSS_SELECTOR, '.inline-show-more-text')
             text_content = text_content_element.text if text_content_element else 'Text content not found'
 
-            return name, text_content
-        
+            return name, text_content   
 
-
+        # Making URLS unique
         urls = list(set(urls))
 
-        with open("output.txt", "w") as file:
-            for item in urls:
-                file.write(item + "\n")
+        # with open("output.txt", "w") as file:
+        #     for item in urls:
+        #         file.write(item + "\n")
 
         # Save the URLs to a CSV file
         with open('links.csv', 'w', newline='') as csvfile:
@@ -117,3 +116,4 @@ def download():
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)
+
